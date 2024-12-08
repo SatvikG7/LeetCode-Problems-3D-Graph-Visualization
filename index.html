@@ -1,0 +1,110 @@
+<head>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            font-size: 20px;
+        }
+
+        #search-container {
+            width: 400px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            padding: 4px;
+        }
+
+        #search-bar {
+            padding: 6px;
+            width: 100%;
+        }
+
+        #search-results {
+            position: absolute;
+            left: 0px;
+            z-index: 1000;
+            height: 100vh;
+            overflow: scroll;
+            background-color: antiquewhite;
+        }
+    </style>
+    <script src="https://unpkg.com/3d-force-graph"></script>
+
+    <title>3D Graph Visualization of LeetCode Problems</title>
+</head>
+
+<body>
+    <div id="search-container">
+        <input id="search-bar" type="text" placeholder="Search problem..." />
+        <div id="search-results"></div>
+    </div>
+
+    <div id="3d-graph"></div>
+
+    <script>
+        const elem = document.getElementById("3d-graph");
+        const searchBar = document.getElementById("search-bar");
+        const searchButton = document.getElementById("search-btn");
+        const resultsContainer = document.getElementById("search-results");
+
+        const Graph = new ForceGraph3D(elem)
+            .jsonUrl("./blocks.json")
+            .nodeLabel((node) => `${node.id}. ${node.description}`)
+            .onNodeClick((node) => {
+                focusOnNode(node);
+            })
+            .linkWidth(2)
+            .nodeRelSize(10)
+            .onNodeRightClick((node) => {
+                window.open(
+                    `https://leetcode.com/problems/${node.label}`,
+                    "_blank"
+                );
+            });
+
+        const focusOnNode = (node) => {
+            const distance = 40;
+            const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+
+            const newPos =
+                node.x || node.y || node.z
+                    ? {
+                          x: node.x * distRatio,
+                          y: node.y * distRatio,
+                          z: node.z * distRatio,
+                      }
+                    : { x: 0, y: 0, z: distance };
+
+            Graph.cameraPosition(newPos, node, 3000);
+        };
+
+        const util = () => {
+            const query = searchBar.value.trim().toLowerCase();
+            const matchingNodes = Graph.graphData().nodes.filter((node) =>
+                `${node.id}. ${node.description}`.toLowerCase().includes(query)
+            );
+            resultsContainer.innerHTML = "";
+            if (matchingNodes.length >= 0) {
+                matchingNodes.forEach((node) => {
+                    const result = document.createElement("div");
+                    result.textContent = `${node.id}. ${node.description}`;
+                    result.style.cursor = "pointer";
+                    result.style.margin = "5px 0";
+                    result.style.color = "blue";
+                    result.style.textDecoration = "underline";
+                    result.addEventListener("click", () => focusOnNode(node));
+                    resultsContainer.appendChild(result);
+                });
+            } else {
+                resultsContainer.textContent = "No matching results found.";
+            }
+        };
+
+        searchBar.addEventListener("keyup", (e) => {
+            util();
+        });
+    </script>
+</body>
